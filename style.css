@@ -1,3 +1,16 @@
 #main {
+	margin: auto;
+	width: 500px;
+}
+
+#viewport {
 	border: 1px solid grey;
+}
+
+#start {
+	background-color: green;
+	color: #fff;
+	height: 40px;
+	width: 502px;
+	
 }
