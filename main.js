@@ -18,16 +18,76 @@
 	var GAME_START = 'start';
 	var GAME_PENDING = 'pending';
 
+	var Board = (function() {
+		var snakeSize = 0;
+		var boardArray = [];
+
+		return {
+			setSnakeSize: function(size) {
+				snakeSize = size;
+			},
+
+			setBoardSize: function(size) {
+				canvas.width = canvas.height = size * snakeSize;
+			},
+
+			getCoord: function(px) {
+				if (typeof px === 'number') {
+					return px / snakeSize;
+				} else if (typeof px === 'object') {
+					return px.map(function(el) {
+						return el / snakeSize;
+					});
+				}
+			},
+
+			getPx: function(coord) {
+				if (typeof coord === 'number') {
+					return coord * snakeSize;
+				} else if (typeof coord === 'object') {
+					return coord.map(function(el) {
+						return el * snakeSize;
+					});
+				}
+			},
+
+			setOccupied: function(coord) {
+				boardArray.push(coord);
+				// var y = [];
+				// y[coord[1]] = 1;
+				// boardArray[coord[0]] = y;
+
+				log(boardArray);
+			},
+
+			checkOccupied: function(coord) {
+				return boardArray.indexOf(coord) > -1;
+				if (boardArray[coord[0]]) {
+					return boardArray[coord[0]][coord[1]] === 1;
+				}
+
+				return false;
+			},
+
+			clearBoard: function() {
+				boardArray = [];
+			}
+		}
+	})();
+
 	var Game = (function() {
 		var options = {
-			speed: 10, // 1s / speed
-			width: 500
+			speed: 10, // 1s/speed
+			snakeSize: 10, //px
+			boardWidth: 50, // snake sizes
 		};
+
+		Board.setSnakeSize(options.snakeSize);
+		Board.setBoardSize(options.boardWidth);
 
 		var state = GAME_PENDING;
 		var mainLoop = null;
 	 	var snakes = [];
-
 
 		var clearCanvas = function() {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -35,14 +95,13 @@
 
 	 	return {
 			init: function() {
-				canvas.width = options.width;
-				canvas.height = options.height || options.width;
-
 				snakes.push(new Snake({
-					startX: canvas.width / 2 + 20
+					size: options.snakeSize,
+					startX: Board.getCoord(canvas.width) / 2 + 3
 				}));
 
 				snakes.push(new Snake({
+					size: options.snakeSize,
 					color: '#FC6E47',
 					keys: {
 						left: 65, //w
@@ -58,9 +117,11 @@
 			ready: function() {
 				state = GAME_PENDING;
 				clearCanvas();
+				Board.clearBoard();
 
 				$.each(snakes, function(index, snake) {
 					snake.ready();
+					Board.setOccupied(snake.getCoord());
 				});
 			},
 
@@ -73,6 +134,7 @@
 
 						$.each(snakes, function(index, snake) {
 							snake.move();
+							Board.setOccupied(snake.getCoord());
 						});
 
 						turn++;
@@ -105,10 +167,9 @@
 
 	Snake.prototype.init = function(options) {
 		this.options = {
-			size: 10, //px
 			color: '#47D5FC',
-			startX: canvas.width / 2 - 20,
-			startY: canvas.height / 2,
+			startX: Board.getCoord(canvas.width) / 2 - 3,
+			startY: Board.getCoord(canvas.height) / 2,
 			keys: {
 				left: 37,
 				up: 38,
@@ -147,8 +208,8 @@
 	};
 
 	Snake.prototype.ready = function() {
-		this.options.x = this.options.startX;
-		this.options.y = this.options.startY;
+		this.x = this.options.startX;
+		this.y = this.options.startY;
 		this.draw();
 	}
 
@@ -156,16 +217,16 @@
 
 		switch (this.direction) {
 			case 'up':
-				this.options.y -= this.options.size;
+				this.y -= 1;
 				break;
 			case 'down':
-				this.options.y += this.options.size;
+				this.y += 1;
 				break;
 			case 'left':
-				this.options.x -= this.options.size;
+				this.x -= 1;
 				break;
 			case 'right':
-				this.options.x += this.options.size;
+				this.x += 1;
 				break;
 		};
 
@@ -174,11 +235,12 @@
 		if (!this.isCollision()) {
 			this.draw();
 		}
+
 	};
 
 	Snake.prototype.draw = function() {
 		ctx.fillStyle = this.options.color;
-		ctx.fillRect(this.options.x, this.options.y, this.options.size, this.options.size);
+		ctx.fillRect(Board.getPx(this.x), Board.getPx(this.y), this.options.size, this.options.size);
 
 		log(this.options.color + ' draw');
 	};
@@ -195,7 +257,7 @@
 	};
 
 	Snake.prototype.isCrossBorder = function() {
-		if (this.options.x > canvas.width || this.options.x < 0 || this.options.y > canvas.height + this.options.size || this.options.y < 0) {
+		if (this.x > canvas.width || this.x < 0 || this.y > canvas.height + this.options.size || this.y < 0) {
 			return true;
 		}
 
@@ -203,17 +265,12 @@
 	};
 
 	Snake.prototype.isCrossSnake = function() {
-		var imgData = ctx.getImageData(this.options.x, this.options.y, 1, 1);
-
-		for (var i = 0; i < 4; i++) {
-			//if pixel is coloured
-			if (imgData.data[i] != 0) {
-				return true;
-			}
-		}
-
-		return false;
+		return Board.checkOccupied(this.getCoord());
 	};
+
+	Snake.prototype.getCoord = function() {
+		return ''+this.x + ',' + this.y;
+	}
 	
 	Game.init();
 	document.getElementById('start').onclick = Game.init;
