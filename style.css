@@ -1,3 +1,35 @@
-#main {
+h2 {}
+
+#container {
+	margin: auto;
+	width: 1000px;
+}
+
+.main {
+	margin: auto;
+	width: 502px;
+}
+
+#game {
 	border: 1px solid grey;
+}
+
+#start {
+	background-color: green;
+	color: #fff;
+	height: 40px;
+	width: 502px;
+	
+}
+
+.first-player {
+	float: left;
+	padding: 20px;
+	width: 200px;
+}
+
+.second-player {
+	float: right;
+	padding: 20px;
+	width: 200px;
 }
